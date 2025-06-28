@@ -1,0 +1,125 @@
+---
+import Header from '../components/Header.astro';
+import Card from '../components/Card.astro';
+import Spinner from '../components/Spinner.astro';
+import Error from '../components/Error.astro';
+
+// Fetch jobs from local API route
+let jobs: any[] = [];
+let loading = false;
+let error: string | null = null;
+let errorType: 'network' | 'scraping' | 'general' = 'general';
+
+try {
+  const response = await fetch('http://localhost:4321/api/jobs');
+  if (response.ok) {
+    jobs = await response.json();
+  } else {
+    error = 'Failed to fetch jobs from server';
+    errorType = 'network';
+  }
+} catch (err) {
+  error = 'Unable to connect to server. Please check if the frontend is running.';
+  errorType = 'network';
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Job Board</title>
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <Header />
+    
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {error ? (
+        <div class="max-w-md mx-auto">
+          <Error message={error} type={errorType} />
+        </div>
+      ) : jobs.length === 0 ? (
+        <div class="text-center py-12">
+          <p class="text-gray-600 text-lg mb-4">No jobs found. Click "Scrape New Jobs" to get started.</p>
+        </div>
+      ) : (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {jobs.map((job) => <Card job={job} />)}
+        </div>
+      )}
+    </main>
+
+    <!-- Loading overlay for scraping -->
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-8 text-center">
+        <div class="mb-4">
+          <Spinner size="lg" color="blue" />
+        </div>
+        <p class="text-gray-700">Scraping jobs...</p>
+        <p class="text-sm text-gray-500 mt-2">This may take a few moments</p>
+      </div>
+    </div>
+
+    <script>
+      const scrapeButton = document.getElementById('scrape-button') as HTMLButtonElement;
+      const loadingOverlay = document.getElementById('loading-overlay');
+      
+      scrapeButton?.addEventListener('click', async () => {
+        try {
+          scrapeButton.textContent = 'Scraping...';
+          scrapeButton.disabled = true;
+          loadingOverlay?.classList.remove('hidden');
+          
+          const response = await fetch('/api/scrape', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              searchTerm: 'Software Engineer',
+              location: 'San Francisco, CA'
+            }),
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to trigger scraping');
+          }
+          
+          // Reload the page to show new jobs
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+          
+        } catch (error) {
+          console.error('Error:', error);
+          
+          // Show error message to user
+          const main = document.querySelector('main');
+          if (main) {
+            main.innerHTML = `
+              <div class="max-w-md mx-auto">
+                <div class="rounded-lg border p-6 text-center text-orange-600 bg-orange-50 border-orange-200">
+                  <div class="text-4xl mb-4">🔍</div>
+                  <h3 class="text-lg font-semibold mb-2">Scraping Failed</h3>
+                  <p class="text-sm mb-4">Failed to scrape jobs. Please try again.</p>
+                  <button 
+                    onclick="window.location.reload()" 
+                    class="bg-white border border-current px-4 py-2 rounded-md hover:bg-gray-50 transition-colors duration-200 font-medium"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              </div>
+            `;
+          }
+        } finally {
+          scrapeButton.textContent = 'Scrape New Jobs';
+          scrapeButton.disabled = false;
+          loadingOverlay?.classList.add('hidden');
+        }
+      });
+    </script>
+  </body>
+</html> 

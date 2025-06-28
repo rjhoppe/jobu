@@ -1,0 +1,48 @@
+---
+interface Props {
+  message: string;
+  type?: 'network' | 'scraping' | 'general';
+  onRetry?: () => void;
+}
+
+const { message, type = 'general', onRetry } = Astro.props;
+
+const errorIcons = {
+  network: '🌐',
+  scraping: '🔍',
+  general: '⚠️'
+};
+
+const errorColors = {
+  network: 'text-blue-600 bg-blue-50 border-blue-200',
+  scraping: 'text-orange-600 bg-orange-50 border-orange-200',
+  general: 'text-red-600 bg-red-50 border-red-200'
+};
+---
+
+<div class={`rounded-lg border p-6 text-center ${errorColors[type]}`}>
+  <div class="text-4xl mb-4">{errorIcons[type]}</div>
+  <h3 class="text-lg font-semibold mb-2">
+    {type === 'network' && 'Network Error'}
+    {type === 'scraping' && 'Scraping Failed'}
+    {type === 'general' && 'Something went wrong'}
+  </h3>
+  <p class="text-sm mb-4">{message}</p>
+  
+  {onRetry && (
+    <button 
+      id="retry-button"
+      class="bg-white border border-current px-4 py-2 rounded-md hover:bg-gray-50 transition-colors duration-200 font-medium"
+    >
+      Try Again
+    </button>
+  )}
+</div>
+
+<script>
+  const retryButton = document.getElementById('retry-button');
+  
+  retryButton?.addEventListener('click', () => {
+    window.location.reload();
+  });
+</script> 
