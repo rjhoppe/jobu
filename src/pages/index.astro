@@ -46,7 +46,14 @@ try {
         </div>
       ) : (
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {jobs.map((job) => <Card job={job} />)}
+          {jobs.map((job) => (
+            <Card 
+              title={job.title}
+              text={`${job.company} - ${job.location}`}
+              href={job.url}
+              linkText="View Job"
+            />
+          ))}
         </div>
       )}
     </main>
